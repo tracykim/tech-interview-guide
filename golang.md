@@ -178,7 +178,7 @@ Protocol Buffers 是一种与语言、平台无关，可扩展的序列化结构
 
 gRPC是谷歌开源的RPC框架
 
-![img](./images/7dcac5be0a34636c699025368242d3f3.png)
+![grpc](./images/grpc.png)
 
 1、客户端（gRPC Sub）调用 A 方法，发起 RPC 调用
 

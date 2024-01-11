@@ -74,8 +74,6 @@ int main()
 }
 ```
 
-
-
 # 字符串
 
 ## 构建回文
@@ -143,9 +141,16 @@ int main()
 }
 ```
 
-
-
 # 排序
+
+![排序算法分析](images/bVbCXi7.png)
+
+快排为什么用的比较多？
+
+- 快排应该是最佳的通用排序算法！
+- 快排代码紧凑，常数因子小，局部性良好（让元素尽快的移动到最终的位置，然后做小范围的跳动）
+- 归并需要额外空间大，稳定！
+- 堆排局部性差导致缓存命中率低！：堆排序让数据过于大距离的移动
 
 ## 快速排序
 
@@ -243,8 +248,6 @@ void selectSort(int[] arr, int len){
 }
 ```
 
-
-
 ## 堆排序
 
 思路
@@ -294,8 +297,6 @@ void heapSort(vector<int> &arr, int size)
 
 https://www.cnblogs.com/wanglei5205/p/8733524.html
 
-
-
 ## 插入排序
 
 ```c++
@@ -330,35 +331,35 @@ int main()
 {
 	unordered_map<string, int> dict; // 声明unordered_map对象
 	//unordered_map<string, int> dict = {{"apple",2}, "orange",3}; // 带初值
-    
+  
 	// 插入数据的四种方式
 	dict.insert(pair<string,int>("apple",2));
 	dict.insert(make_pair("orange",3));
     dict.insert({ "tomato", "1" });
 	dict["banana"] = 6;
-	
+
 	// 判断是否有元素
 	if(dict.empty())
 		cout<<"该字典无元素"<<endl;
 	else
 		cout<<"该字典共有"<<dict.size()<<"个元素"<<endl;
-	
+
 	// 遍历
 	unordered_map<string, int>::iterator iter;
 	for(iter=dict.begin();iter!=dict.end();iter++)
 		cout<<iter->first<<" "<<iter->second<<endl;
-	
+
 	// 查找
 	if(dict.count("boluo")==0)
 		cout<<"can't find boluo!"<<endl;
 	else
 		cout<<"find boluo!"<<endl;
-	
+
 	if((iter=dict.find("banana"))!=dict.end())
 		cout<<"banana="<<iter->second<<endl;
 	else
 		cout<<"can't find boluo!"<<endl;
-	
+
     // 通过迭代器删除
 	mymap5.erase(mymap5.begin());
 	// 通过 Key 值删除
@@ -370,13 +371,12 @@ int main()
 }
 ```
 
-- `map`和`unordered_map`区别
+- `map`和 `unordered_map`区别
 
   - map：对应红黑树（具有自动排序功能），查找时间复杂度**O(logN)**
-
   - unordered_map：对应哈希表，查找时间复杂度**O(1)**
+- `hash_map`和 `unordered_map`区别
 
-- `hash_map`和`unordered_map`区别
   - 本质都是哈希表，只不过 `unordered_map`被纳入了C++标准库标准。
 
 ## priority_queue
@@ -389,8 +389,6 @@ priority_queue<int> q // 默认大根堆
 priority_queue<int, vector<int>, greater<int>> q // 小根堆
 ```
 
-
-
 注意：
 
 - emplace_back(type) 对应 push_back(type)
@@ -398,8 +396,6 @@ priority_queue<int, vector<int>, greater<int>> q // 小根堆
 - emplace_front(type) 对应于 push_front()
 
 但是！对于stack 和 queue，只有push操作，所以也只有emplace操作，此时它们是相对应的。
-
-
 
 ## 手写最大堆
 
@@ -421,8 +417,8 @@ public:
         size = 0;
         capacity = maxSize;
     }
-    
-    
+  
+  
     void push(int d){
         if(size == capacity){
             std::cout<<"堆已满！"<<std::endl;
@@ -445,7 +441,7 @@ public:
             i /= 2;
         }
     }
-    
+  
     //删除堆的最大元素
     int deleteMax(){
         if(size == 0){
@@ -479,7 +475,7 @@ public:
             i = j;
         }
     }
-    
+  
     MaxHeap(int arr[], int length, int maxSize){
         data = new int[maxSize+1];
         capacity = maxSize;
@@ -491,9 +487,9 @@ public:
             shiftDown(i);
         }
     }
-    
-    
-    
+  
+  
+  
 private:
     int* data;
     int size;       //当前堆的大小
@@ -524,8 +520,6 @@ int main() {
     return 0;
 }
 ```
-
-
 
 # 并查集
 
@@ -581,8 +575,6 @@ public:
 };
 ```
 
-
-
 # 回溯法
 
 ## 思想
@@ -613,7 +605,7 @@ public:
 		backtrack(nums, res, cur, 0);
 		return res;
 	}
-	
+
 	void backtrack(vector<int>& nums, vector<vector<int>>& res, vector<int> cur, int start)
 	{
 		res.push_back(cur);
@@ -659,8 +651,6 @@ public:
 };
 ```
 
-
-
 ### 组合
 
 ```c++
@@ -672,7 +662,7 @@ class Solution {
 public:
     vector<vector<int>> res;
 	vector<int> cur;
-	vector<vector<int>> combine(int n, int k) {		
+	vector<vector<int>> combine(int n, int k) {	
 		backtrack(n, 1, k);
 		return res;
 	}
@@ -696,8 +686,6 @@ public:
 };
 ```
 
-
-
 ### 组合总和（每个数字可以重复被选取）
 
 ```c++
@@ -707,7 +695,7 @@ public:
  * 找出 candidates 中所有可以使数字和为 target 的组合
  */
 class Solution {
-public:	
+public:
 	vector<vector<int>> res;
 	vector<int> cur;
 	vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
@@ -737,8 +725,6 @@ public:
 	}
 };
 ```
-
-
 
 ### 组合总和2（每个数字只能使用一次）
 
@@ -787,8 +773,6 @@ public:
 };
 ```
 
-
-
 ## 排列
 
 ### 全排列
@@ -833,8 +817,6 @@ public:
 
 ```
 
-
-
 ### 全排列2
 
 ```c++
@@ -871,7 +853,7 @@ public:
 				swap(nums[i], nums[start]);
 		}
 	}
-	
+
 };
 // 使用visited数组
 class Solution {
@@ -879,7 +861,7 @@ class Solution {
 	vector<int> path;
 	vector<int> vis;
 public:
-	
+
 	vector<vector<int>> permuteUnique(vector<int>& nums) {
 		sort(nums.begin(), nums.end());
 		vis.resize(nums.size());
@@ -908,8 +890,6 @@ public:
 	}
 };
 ```
-
-
 
 ### 字符串的全排列
 
@@ -979,8 +959,6 @@ public:
 };
 ```
 
-
-
 ### 字母大小写全排列
 
 ```c++
@@ -1015,11 +993,9 @@ public:
 	vector<string> letterCasePermutation(string s) {
 		backtrack(s, 0);
 		return res;
-	}	
+	}
 };
 ```
-
-
 
 ## 搜索
 
@@ -1070,8 +1046,6 @@ private:
 };
 ```
 
-
-
 ### N皇后
 
 ```c++
@@ -1121,8 +1095,6 @@ private:
 };
 ```
 
-
-
 ### 分割回文串
 
 ```c++
@@ -1141,7 +1113,7 @@ public:
 		{
 			for (int j = i+1; j < len; j++)
 			{
-				dp[i][j] = (s[i] == s[j]) && dp[i + 1][j - 1];				
+				dp[i][j] = (s[i] == s[j]) && dp[i + 1][j - 1];			
 			}
 		}
 		dfs(s, 0);
@@ -1169,8 +1141,6 @@ private:
 	}
 };
 ```
-
-
 
 # 背包问题
 
@@ -1235,8 +1205,6 @@ void backpack01() {
 }
 ```
 
-
-
 ## 完全背包问题
 
 - 01背包内嵌的循环是从大到小遍历，为了保证每个物品仅被添加一次
@@ -1257,8 +1225,6 @@ void test_CompletePack() {
     cout << dp[bagWeight] << endl;
 }
 ```
-
-
 
 ### 完全背包的组合和排列问题
 
@@ -1333,7 +1299,7 @@ public:
                 else
                     onesNum++;
             }
-                
+              
             for (int i=m; i>=zerosNum; i--) {
                 for (int j=n; j>=onesNum; j--) {
                     dp[i][j]=max(dp[i][j], dp[i-zerosNum][j-onesNum]+1);
@@ -1344,8 +1310,6 @@ public:
     }
 };
 ```
-
-
 
 并查集
 
@@ -1402,8 +1366,6 @@ public:
 };
 ```
 
-
-
 # 笔试题
 
 ## 迷宫问题
@@ -1443,7 +1405,7 @@ int main()
 	//stack< pair<int, int> > stk;
 	vector< pair<int, int> >path;
 	cin >> N >> M;
-	
+
 	vector<vector<int>> a(N, vector<int>(M, 1));
 
 	for (int i = 0; i < N; i++)
@@ -1453,7 +1415,7 @@ int main()
 			cin >> a[i][j];
 		}
 	}
-	
+
 	//dfs(a, stk, 0, 0);
 	dfs(a, path, 0, 0);
 }
@@ -1509,8 +1471,6 @@ void printStackReverse(stack< pair<int, int> > stk)
 }
 ```
 
-
-
 ## 迷宫摸墙走
 
 ```c++
@@ -1536,7 +1496,7 @@ int main()
 	int s1, s2; // 起点坐标
 	int step, step_final; //步数
 	cin >> T;
-	vector< pair<int, int> >path;	
+	vector< pair<int, int> >path;
 
 	while (T--)
 	{
@@ -1573,11 +1533,11 @@ int main()
 			cur_dir = 3;
 		else
 			cur_dir = 1;
-		
+	
 		dfs(a, s1, s2, step, step_final, cur_dir);
 		cout << step_final << endl;
 	}
-	
+
 }
 
 bool dfs(vector<vector<char>>& a, int x, int y, int step, int& step_final, int cur_dir)
@@ -1591,7 +1551,7 @@ bool dfs(vector<vector<char>>& a, int x, int y, int step, int& step_final, int c
 		return true;
 	}
 	step++;
-	a[x][y] = '#'; //标记走过的路	
+	a[x][y] = '#'; //标记走过的路
 
 	// 三个方向的坐标都不一样
 	int next1_dir = (cur_dir + 3) % 4; // 左
@@ -1610,8 +1570,6 @@ bool dfs(vector<vector<char>>& a, int x, int y, int step, int& step_final, int c
 	return res;
 }
 ```
-
-
 
 ## 旅行商问题
 
@@ -1670,7 +1628,7 @@ int main()
 	int n; // 城市个数
 	//int a[100][100]; // 距离矩阵
 	vector<int> path, res; //路径
-	
+
 	int minLen = 1000; //路径长度
 	cin >> n;
 	//n = 4;
@@ -1684,7 +1642,7 @@ int main()
 			cin >> a[i][j];
 		}
 	}
-	
+
 
 	/*a = {
 		{0, 2, 6, 5},
@@ -1696,8 +1654,6 @@ int main()
 	cout << minLen << endl;
 }
 ```
-
-
 
 ## 赏金猎人
 
@@ -1738,8 +1694,6 @@ int main() {
 }
 ```
 
-
-
 - 卖鸡蛋饼更换纸币（5、10、20元，找不开钱收摊）
 - 链表相减
   - 计算两个代表整数的链表参与减法运算后的结果，通过链表形式返回
@@ -1763,7 +1717,7 @@ int main()
 		{6,8,-1,6}
 	};
 	int n = nums.size(), m = nums[0].size();*/
-	
+
 	int n, m;
 	cin >> n >> m;
 	vector<vector<int>> nums(n, vector<int>(m));
@@ -1795,8 +1749,6 @@ int main()
 	cout << ma << endl;
 }
 ```
-
-
 
 ### 第二题
 
@@ -1868,7 +1820,7 @@ int main()
 	cin >> n;
 	vector<vector<int>> adj(n);
 	vector<int> times(n);
-	
+
 	for (int i = 0; i < n; i++)
 	{
 		vector<int> data;
@@ -1887,10 +1839,10 @@ int main()
 		times[i] = data[data.size() - 1];
 	}
 
-	
+
 
 	vector<int> indeg(n);
-	
+
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < adj[i].size();j++)
@@ -1902,7 +1854,7 @@ int main()
 	{
 		if (indeg[i] == 0) {
 			que.push(i);
-		}			
+		}		
 	}
 
 	while (!que.empty())
@@ -1930,8 +1882,6 @@ int main()
 	cout << res << endl;
 }
 ```
-
-
 
 ## 阿里08.02笔试
 
@@ -1995,7 +1945,7 @@ int main()
 		}
 		printf("%s\n", flag ? "YES" : "NO");
 	}
-	
+
 }
 ```
 
@@ -2023,7 +1973,7 @@ public:
 		int n = a.size();
 		ListNode* head=new ListNode(0);
 		ListNode* h = head;
-		
+	
 		vector<bool> isempty(n, false);
 		for (int i = 0; i < n; i++)
 		{
@@ -2048,12 +1998,12 @@ public:
 					if (a[i] == nullptr) {
 						isempty[i] = true;
 					}
-				}				
+				}			
 			}
 			if(count==n)
 				break;
 		}
-		
+	
 		return head->next;
 	}
 };
@@ -2137,7 +2087,7 @@ int main()
 	cin >> n;
 	string s;
 	cin >> s;
-	
+
 	vector<int> a(n + 1);
 	for (int i = 1; i <=n; i++)
 	{
@@ -2252,11 +2202,8 @@ int main()
 ## 网易雷火
 
 - 随机打乱数组并证明正确性
-
 - k大小滑动窗口中最大数和最小数的差的最大值（两个单调队列维护一下）
-
 - 手写最小堆
-
 - 给一个凸多边形，求三角剖分的最小边长（简单dp）
 
   https://blog.csdn.net/Jayphone17/article/details/102581362
@@ -2269,8 +2216,8 @@ int main()
 - 字符串最长回文数 × LeetCode_5
 - 两个链表节点值相加 √ leetcode 445
 - 大意是给N，找出1到N中能被N整除的数。一开始直接就循环直接看余数是否等于零。面试官提示减少循环次数，答一次找出两个数 例如N是9 一次性找出1和9 √ Moni-01
-- 排序两个有序链表 √ LeetCode_21 
-- 有效的括号 √ LeetCode_20 
+- 排序两个有序链表 √ LeetCode_21
+- 有效的括号 √ LeetCode_20
 - 二叉树的最小深度 √ LeetCode_111
 - 作者：我会个锤子的算法
   链接：https://www.nowcoder.com/discuss/643910?type=2&order=3&pos=11&page=1&channel=-1&source_id=discuss_tag_nctrack

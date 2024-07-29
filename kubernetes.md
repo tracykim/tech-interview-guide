@@ -33,6 +33,30 @@
 
 更新：滚动升级，最多不可用和允许超过数量为所需副本数量的25%
 
+## Pod
+
+### Pod创建过程
+
+1. 用户通过kubectl或Deployment 控制器提交 Pod 创建事件 给 API Server
+2. API Server 收到请求，将Pod 信息存入 etcd 中，待写入操作执行完成后，API Server 返回确认信息给客户端（此时Pod的状态为Pending）
+3. scheduler watch到API Server 创建了新的 Pod，但尚未绑定至任何工作节点；scheduler将根据Pod 对象的spec信息（如计算资源，nodeSelector等），以及工作节点当前状态来挑选工作节点，并将调度结果信息返回给 API Server；（此时Pod的状态为Running）
+4. API Server将调度结果信息更新至 etcd 数据库中，而且 API Server 也开始反映此Pod 对象的调度结果（保证kube-scheduler不会重复调取该任务）
+5. 目标节点上的 kubelet watch  API Server，发现有新的 Pod 调度到了自己的节点上，kubelet 在当前节点上调用容器运行时（Docker、containerd）来启动容器，并将容器的结果状态（镜像拉取状态，容器启动状态）返回给 API Server；至少有一个容器启动则Pod的状态为Running
+6. API Server将 Pod 状态信息存入 etcd 数据库中；在etcd 确认写入操作成功完成后，API Server 将确认信息发送给相关节点的 kubelet，完成整个Pod创建。
+
+### Pod删除过程
+
+1. 用户通过命令或者是控制器向API Server提交删除Pod请求；
+2. API Server 接收删除请求并将其写入 etcd 数据库中，标记 Pod 为删除，更新为 Terminating 状态，持久化到etcd中
+3. Endpoint Controller更新 Service
+   1. 端点控制器（Endpoint Controller）监控 API Server 中 Pod 的状态变化
+   2. 当 Pod 被标记为 `Terminating` 时，端点控制器会将该 Pod 从所有相关的 Service 的端点列表（Endpoints）中移除
+   3. 端点控制器更新 Service 的端点列表，并将这些更新写入 etcd
+4. 目标节点上的 kubelet 通过 watch 机制监控 API Server，发现 Pod 被标记为 Terminating 状态，开始进行清理工作，终止 Pod 中运行的所有容器
+   1. kubelet 发送信号给所有正在运行的容器，通知它们即将被终止。容器收到信号后，可以执行预定义的清理操作（如处理结束请求、保存状态等）。
+   2. kubelet 等待所有容器优雅地终止。如果配置了 `terminationGracePeriodSeconds`，kubelet 会等待指定的时间。如果容器在该时间内未能终止，kubelet 会强制终止它们。
+5. 所有容器成功终止后，kubelet 将更新 Pod 的状态，并通知 API Server。API Server 将 Pod 对象从 etcd 中删除，正式完成 Pod 的删除操作
+
 ## Service
 
 ### service和ingress 的区别

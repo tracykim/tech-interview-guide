@@ -43,7 +43,7 @@ Go的运行时（runtime）采用了GMP模型来管理和调度Goroutines
 - 每个P有个局部队列，局部队列保存待执行的goroutine(流程2)，当M绑定的P的的局部队列已经满了之后就会把goroutine放到全局队列(流程2-1)
 - 每个P和一个M绑定，M是真正的执行P中goroutine的实体(流程3)，M从绑定的P中的局部队列获取G来执行
 - 当M绑定的P的局部队列为空时，M会从全局队列获取到本地队列来执行G(流程3.1)，当从全局队列中没有获取到可执行的G时候，M会从其他P的局部队列中偷取G来执行(流程3.2)，这种从其他P偷的方式称为**work stealing**
-- 当G因系统调用(syscall)阻塞时会阻塞M，此时P会和M解绑即**hand off**，并寻找新的idle的M，若没有idle的M就会新建一个M(流程5.1)。
+- 当G因系统调用(syscall)阻塞时会阻塞M，此时P会和M解绑即**hand off**，并寻找新的idle（空闲）的M，若没有idle的M就会新建一个M(流程5.1)。
 - 当G因channel或者network I/O阻塞时，不会阻塞M，M会寻找其他runnable的G；当阻塞的G恢复后会重新进入runnable进入P队列等待执行(流程5.3)
 
 **本地队列和全局队列的区别？**
@@ -151,13 +151,16 @@ go只有值传递，都是一个副本，一个拷贝
 
 ### Goroutine出现内存泄露的原因
 
+Goroutine 内存泄漏通常指的是 Goroutine 被创建但从未正确结束，从而导致内存被持续占用
+
 - 长期运行的 Goroutine：如果一个 Goroutine 长期运行而不退出，它占用的内存将一直无法被回收。
+- 上下文未取消：如果 Goroutine 在等待一个带有超时或取消功能的上下文（`context.Context`），但上下文未正确取消，则可能导致 Goroutine 持续运行，从而造成内存泄漏
+- 上时间持有锁：在 Goroutine 中长时间持有互斥锁（如 `sync.Mutex`），可能导致其他 Goroutine 被阻塞，从而导致内存泄漏
 - 死循环，未释放的资源：如果 Goroutine 使用了某些资源（例如打开了文件或数据库连接），但在完成后没有正确地关闭或释放这些资源，那么这些资源就会一直占用内存
+- `sync.WaitGroup`使用不正确：在使用 `sync.WaitGroup` 时，如果调用 `Add` 的数量与实际调用 `Done` 的次数不匹配，可能导致主 Goroutine 等待时间过长，从而造成内存泄漏
 - Channel阻塞
   - 写操作没有读导致阻塞（无缓冲或者有缓冲但是缓冲满了）
   - 读操作没有写导致阻塞
-
-内存泄露的场景
 
 ## new和make的区别
 
@@ -182,7 +185,7 @@ gRPC是谷歌开源的RPC框架
 
 1、客户端（gRPC Sub）调用 A 方法，发起 RPC 调用
 
-2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL）
+2、对请求信息使用 Protobuf 进行对象序列化压缩（IDL，Interface Definition Language）
 
 3、服务端（gRPC Server）接收到请求后，解码请求体，进行业务逻辑处理并返回
 

@@ -14,11 +14,17 @@
 - kubelet：确保容器处于运行状态且健康
 - kube-proxy：网络代理，维护节点上的网络规则，为Service提供服务发现和负载均衡；
 
-### Kube-proxy的发展
+### Kube-proxy
+
+#### Kube-proxy的发展
 
 - 第一代：Kube-proxy进程是一个真实的TCP/UDP代理，负责Service到Pod的访问流量
 - 第二代：将iptables作为kube-proxy的默认模式，iptables模式工作在内核态，不经过用户态中转，性能更强
 - 第三代：集群中service和Pod大量增加后，每个node上iptables的规则会急速膨胀，导致网络性能下降，于是引入了IPVS，专用于高性能负载均衡，使用哈希表
+
+#### kube-pooxy的作用
+
+ kube-proxy负责为Service提供cluster内部的服务发现和负载均衡，它运行在每个Node计算节点上，负责Pod网络代理, 它会定时从etcd服务获取到service信息来做相应的策略，维护网络规则和四层负载均衡工作
 
 ## 工作负载
 
@@ -31,7 +37,13 @@
 
 ### deployment创建更新的过程
 
-更新：滚动升级，最多不可用和允许超过数量为所需副本数量的25%
+更新：默认是滚动升级
+
+1. 创建新的RS，然后根据新的镜像运行新的Pod。 
+2. 删除旧的Pod，启动新的Pod，当新Pod就绪后，继续删除旧Pod，启动新Pod。 
+3. 持续第二步过程，一直到所有Pod都被更新成功。
+
+最多不可用和允许超过数量为所需副本数量的25%
 
 ## Pod
 
@@ -42,7 +54,8 @@
 3. scheduler watch到API Server 创建了新的 Pod，但尚未绑定至任何工作节点；scheduler将根据Pod 对象的spec信息（如计算资源，nodeSelector等），以及工作节点当前状态来挑选工作节点，并将调度结果信息返回给 API Server；（此时Pod的状态为Running）
 4. API Server将调度结果信息更新至 etcd 数据库中，而且 API Server 也开始反映此Pod 对象的调度结果（保证kube-scheduler不会重复调取该任务）
 5. 目标节点上的 kubelet watch  API Server，发现有新的 Pod 调度到了自己的节点上，kubelet 在当前节点上调用容器运行时（Docker、containerd）来启动容器，并将容器的结果状态（镜像拉取状态，容器启动状态）返回给 API Server；至少有一个容器启动则Pod的状态为Running
-6. API Server将 Pod 状态信息存入 etcd 数据库中；在etcd 确认写入操作成功完成后，API Server 将确认信息发送给相关节点的 kubelet，完成整个Pod创建。
+6. API Server将 Pod 状态信息存入 etcd 数据库中；在etcd 确认写入操作成功完成后，API Server 将确认信息发送给相关节点的 kubelet
+7. 将该 Pod 的 IP 地址和端口信息添加到相关 Service 的 Endpoint 对象中
 
 ### Pod删除过程
 
@@ -55,13 +68,28 @@
 4. 目标节点上的 kubelet 通过 watch 机制监控 API Server，发现 Pod 被标记为 Terminating 状态，开始进行清理工作，终止 Pod 中运行的所有容器
    1. kubelet 发送信号给所有正在运行的容器，通知它们即将被终止。容器收到信号后，可以执行预定义的清理操作（如处理结束请求、保存状态等）。
    2. kubelet 等待所有容器优雅地终止。如果配置了 `terminationGracePeriodSeconds`，kubelet 会等待指定的时间。如果容器在该时间内未能终止，kubelet 会强制终止它们。
-5. 所有容器成功终止后，kubelet 将更新 Pod 的状态，并通知 API Server。API Server 将 Pod 对象从 etcd 中删除，正式完成 Pod 的删除操作
+5. 所有容器成功终止后，kubelet 将更新 Pod 的状态，并通知 API Server。
+6. API Server 将 Pod 对象从 etcd 中删除
 
 ## Service
 
+Service 是一组pod的服务抽象，主要用于为 Pod 提供一个固定、统一的访问接口及负载均衡的能力
+
+### 服务发现
+
+Kubernetes 支持两种主要的服务发现模式：环境变量和 DNS。
+
+- 环境变量：当Pod启动时，Kubernetes会为每个Service在Pod的环境中设置一组环境变量。这些环境变量包含Service的集群IP和端口信息。这种方式必须在客户端 Pod 出现之前创建该 Service。 否则，这些客户端 Pod 中将不会出现对应的环境变量
+- DNS：CoreDNS提供了动态服务发现功能。每个Service都会在DNS中注册一个域名，格式通常为`<service-name>.<namespace>.svc.cluster.local`。Pod内部的应用程序可以通过该域名解析到对应的Service
+
+### 负载均衡
+
+访问Service的请求，不论是Cluster IP+TargetPort的方式，还是用Node IP+NodePort的方式，都被Node节点的Iptables规则重定向到Kube-proxy监听Service服务代理端口。kube-proxy接收到Service的访问请求后，根据负载策略，转发到后端的Pod
+
 ### service和ingress 的区别
 
-Service主要用于在集群内部的服务发现和负载均衡，而Ingress则用于将外部流量路由到Service和Pod上
+- Service主要用于在集群内部的服务发现和负载均衡；
+- Ingress则用于将外部流量路由到Service上，提供了基于域名和路径的路由规则
 
 ## Scheduler
 
@@ -93,3 +121,6 @@ Flannel注重易用性和简单性，而Calico提供了更多的网络策略和�
 ## 存储
 
 ## Empty dir和PV区别
+
+- emptyDir：适用于临时存储，数据与 Pod 生命周期绑定，Pod 删除后数据丢失。
+- PV：适用于持久性存储，数据独立于 Pod 生命周期，提供更灵活和持久的存储解决方案。

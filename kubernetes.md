@@ -39,8 +39,8 @@
 
 更新：默认是滚动升级
 
-1. 创建新的RS，然后根据新的镜像运行新的Pod。 
-2. 删除旧的Pod，启动新的Pod，当新Pod就绪后，继续删除旧Pod，启动新Pod。 
+1. 创建新的RS，然后根据新的镜像运行新的Pod。
+2. 删除旧的Pod，启动新的Pod，当新Pod就绪后，继续删除旧Pod，启动新Pod。
 3. 持续第二步过程，一直到所有Pod都被更新成功。
 
 最多不可用和允许超过数量为所需副本数量的25%
@@ -51,7 +51,7 @@
 
 1. 用户通过kubectl或Deployment 控制器提交 Pod 创建事件 给 API Server
 2. API Server 收到请求，将Pod 信息存入 etcd 中，待写入操作执行完成后，API Server 返回确认信息给客户端（此时Pod的状态为Pending）
-3. scheduler watch到API Server 创建了新的 Pod，但尚未绑定至任何工作节点；scheduler将根据Pod 对象的spec信息（如计算资源，nodeSelector等），以及工作节点当前状态来挑选工作节点，并将调度结果信息返回给 API Server；（此时Pod的状态为Running）
+3. scheduler watch到API Server 创建了新的 Pod，但尚未绑定至任何工作节点；scheduler将根据Pod 对象的spec信息（如计算资源，nodeSelector等），以及工作节点当前状态来挑选工作节点，并将调度结果信息返回给 API Server；
 4. API Server将调度结果信息更新至 etcd 数据库中，而且 API Server 也开始反映此Pod 对象的调度结果（保证kube-scheduler不会重复调取该任务）
 5. 目标节点上的 kubelet watch  API Server，发现有新的 Pod 调度到了自己的节点上，kubelet 在当前节点上调用容器运行时（Docker、containerd）来启动容器，并将容器的结果状态（镜像拉取状态，容器启动状态）返回给 API Server；至少有一个容器启动则Pod的状态为Running
 6. API Server将 Pod 状态信息存入 etcd 数据库中；在etcd 确认写入操作成功完成后，API Server 将确认信息发送给相关节点的 kubelet
@@ -80,11 +80,17 @@ Service 是一组pod的服务抽象，主要用于为 Pod 提供一个固定、�
 Kubernetes 支持两种主要的服务发现模式：环境变量和 DNS。
 
 - 环境变量：当Pod启动时，Kubernetes会为每个Service在Pod的环境中设置一组环境变量。这些环境变量包含Service的集群IP和端口信息。这种方式必须在客户端 Pod 出现之前创建该 Service。 否则，这些客户端 Pod 中将不会出现对应的环境变量
-- DNS：CoreDNS提供了动态服务发现功能。每个Service都会在DNS中注册一个域名，格式通常为`<service-name>.<namespace>.svc.cluster.local`。Pod内部的应用程序可以通过该域名解析到对应的Service
+- DNS：CoreDNS提供了动态服务发现功能。每个Service都会在DNS中注册一个域名，格式通常为 `<service-name>.<namespace>.svc.cluster.local`。Pod内部的应用程序可以通过该域名解析到对应的Service
 
 ### 负载均衡
 
-访问Service的请求，不论是Cluster IP+TargetPort的方式，还是用Node IP+NodePort的方式，都被Node节点的Iptables规则重定向到Kube-proxy监听Service服务代理端口。kube-proxy接收到Service的访问请求后，根据负载策略，转发到后端的Pod
+Kubernetes的负载均衡通过**kube-proxy**实现，使用**iptables**或**ipvs**规则将流量均匀地分发到Service后端的Pod。流量根据轮询算法分配到多个Pod，确保高效负载均衡
+
+主要的负载均衡算法包括：
+
+- 轮询（Round Robin）：将流量均匀地分配到所有Pod上。
+- 加权轮询（Weighted Round Robin）：给Pod分配不同的权重，权重大的Pod会收到更多的流量。
+- 最少连接（Least Connections）：流量优先分配给当前连接数最少的Pod。
 
 ### service和ingress 的区别
 

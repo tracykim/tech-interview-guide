@@ -14,7 +14,7 @@
 - kubelet：确保容器处于运行状态且健康
 - kube-proxy：网络代理，维护节点上的网络规则，为Service提供服务发现和负载均衡；
 
-### Kube-proxy
+### 1、Kube-proxy
 
 #### Kube-proxy的发展
 
@@ -22,9 +22,33 @@
 - 第二代：将iptables作为kube-proxy的默认模式，iptables模式工作在内核态，不经过用户态中转，性能更强
 - 第三代：集群中service和Pod大量增加后，每个node上iptables的规则会急速膨胀，导致网络性能下降，于是引入了IPVS，专用于高性能负载均衡，使用哈希表
 
-#### kube-pooxy的作用
+#### kube-proxy的作用
 
  kube-proxy负责为Service提供cluster内部的服务发现和负载均衡，它运行在每个Node计算节点上，负责Pod网络代理, 它会定时从etcd服务获取到service信息来做相应的策略，维护网络规则和四层负载均衡工作
+
+### 2、Scheduler
+
+Scheduling Framework
+
+### 调度流程
+
+承上：负责接收Controller Manager创建的新Pod
+
+启下：调度到Node上后，由Node上的kubelet服务接管后续工作
+
+### 3、controller-manager
+
+#### informer
+
+Informer是 Kubernetes 控制器（controller）中的模块，是控制器调谐循环（reconcile loop）与 Kubernetes API-Server 挂接的桥梁，我们通过 API-Server 增删改某个 Kubernetes API 对象，该资源对应的控制器中的 Informer 会立即感知到这个事件并作出调谐。informer会周期性的执行List（resync）操作，将所有的资源存放在Informer Store中
+
+![img](./images/informer.jpg)
+
+Informer架构设计的核心组件
+
+- Reflector：用于List&Watch指定的Kubernetes资源，当监控的资源发生变化时触发响应的变更事件（例如Added事件、Updated事件和Deleted事件），并将其资源对象存放到本地缓存DeltaFIFO Queue。
+- DeltaFIFO Queue：用来存储变化的kubernetes资源对象
+- Indexer：将增量中的 Kubernetes 资源对象保存到本地缓存中，并为其创建索引，这份缓存与 etcd 中的数据是完全一致的。控制器只从本地缓存通过索引读取数据，这样做减小了 apiserver 和 etcd 的压力
 
 ## 工作负载
 
@@ -60,16 +84,21 @@
 ### Pod删除过程
 
 1. 用户通过命令或者是控制器向API Server提交删除Pod请求；
-2. API Server 接收删除请求并将其写入 etcd 数据库中，标记 Pod 为删除，更新为 Terminating 状态，持久化到etcd中
-3. Endpoint Controller更新 Service
+2. API Server 接收删除请求更新etcd
+   1. 设置.metadata.deletionTimestamp
+   2. 若有.metadata.finalizers，则等finalizers完成才删
+
+3. Pod被标记为 Terminating （逻辑状态）
+4. Endpoint Controller更新 Service
    1. 端点控制器（Endpoint Controller）监控 API Server 中 Pod 的状态变化
    2. 当 Pod 被标记为 `Terminating` 时，端点控制器会将该 Pod 从所有相关的 Service 的端点列表（Endpoints）中移除
    3. 端点控制器更新 Service 的端点列表，并将这些更新写入 etcd
-4. 目标节点上的 kubelet 通过 watch 机制监控 API Server，发现 Pod 被标记为 Terminating 状态，开始进行清理工作，终止 Pod 中运行的所有容器
-   1. kubelet 发送信号给所有正在运行的容器，通知它们即将被终止。容器收到信号后，可以执行预定义的清理操作（如处理结束请求、保存状态等）。
-   2. kubelet 等待所有容器优雅地终止。如果配置了 `terminationGracePeriodSeconds`，kubelet 会等待指定的时间。如果容器在该时间内未能终止，kubelet 会强制终止它们。
-5. 所有容器成功终止后，kubelet 将更新 Pod 的状态，并通知 API Server。
-6. API Server 将 Pod 对象从 etcd 中删除
+5. 目标节点上的 kubelet  watch  API Server，发现 Pod 被标记为 Terminating 状态，开始进行清理工作，终止 Pod 中运行的所有容器
+   1. kubelet 发送SIGTREM信号给所有容器，通知优雅退出。容器收到信号后，可以执行预定义的清理操作（如处理结束请求、保存状态等）。
+   2. kubelet 等待所有容器优雅退出。如果配置了 `terminationGracePeriodSeconds`，kubelet 会等待指定的时间。
+   3. 如果容器在该时间内未能终止，kubelet 会发送SIGKILL信息强制终止
+6. 所有容器成功终止后，kubelet 将更新 Pod 的状态，并通知 API Server。
+7. API Server 将 Pod 对象从 etcd 中删除
 
 ## Service
 
@@ -97,15 +126,12 @@ Kubernetes的负载均衡通过**kube-proxy**实现，使用**iptables**或**ipv
 - Service主要用于在集群内部的服务发现和负载均衡；
 - Ingress则用于将外部流量路由到Service上，提供了基于域名和路径的路由规则
 
-## Scheduler
+## client-go
 
-Scheduling Framework
-
-### 调度流程
-
-承上：负责接收Controller Manager创建的新Pod
-
-启下：调度到Node上后，由Node上的kubelet服务接管后续工作
+- RESTClient：最基础的client
+- clientSet：与k8s资源对象交互最常用的client，不包括CRD
+- DynamicClient：支持CRD
+- DiscoveryClient：用于发现apiserver支持的Group/Version/Resource信息
 
 ## CRD的性能瓶颈
 
